@@ -144,11 +144,26 @@ CREATE TABLE `sonogram` (
 
 DROP TABLE IF EXISTS `sonogram_data`;
 CREATE TABLE `sonogram_data` (
-  `sonogram_id` int(11) NOT NULL,
+  `sonogram_data_id` int(11) NOT NULL AUTO_INCREMENT,
   `time_stamp` double NOT NULL,
   `data` blob NOT NULL,
-  PRIMARY KEY (`sonogram_id`,`time_stamp`),
-  CONSTRAINT `sonogram_data_ibfk_1` FOREIGN KEY (`sonogram_id`) REFERENCES `sonogram` (`sonogram_id`)
+  PRIMARY KEY (`sonogram_data_id`),
+  KEY `time_stamp` (`time_stamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+
+--
+-- Table structure for table `sonogram_data_intersect`
+--
+
+drop table if exists `sonogram_data_intersect`
+CREATE TABLE `sonogram_data_intersect` (
+  `sonogram_id` int(11) NOT NULL,
+  `sonogram_data_id` int(11) NOT NULL,
+  `time_stamp` double NOT NULL,
+  PRIMARY KEY (`sonogram_id`,`sonogram_data_id`),
+  KEY `sonogram_data_intersect_ibfk_2` (`sonogram_data_id`),
+  CONSTRAINT `sonogram_data_intersect_ibfk_1` FOREIGN KEY (`sonogram_id`) REFERENCES `sonogram` (`sonogram_id`),
+  CONSTRAINT `sonogram_data_intersect_ibfk_2` FOREIGN KEY (`sonogram_data_id`) REFERENCES `sonogram_data` (`sonogram_data_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1
 
 --

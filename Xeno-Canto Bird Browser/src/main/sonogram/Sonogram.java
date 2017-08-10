@@ -61,6 +61,7 @@ public class Sonogram implements Comparable<Sonogram> {
 		NOISY_OTHER_BIRD
 	}
 	private EnumSonogramQuality quality = null;
+	private double startTime;
 	
 	public Sonogram(SonogramPreference sp, Onset o, int l) {
 		sonogramPreference = sp;
@@ -98,14 +99,6 @@ public class Sonogram implements Comparable<Sonogram> {
 				+ lengthString;
 	}
 	
-	/* Need to change this to make a COPY of sd because it may be used in many sonograms
-	 * 
-	 */
-	public void add(SonogramData sd) { 
-		SonogramData sonogramData = new SonogramData(sd);
-		sonogramDataSet.add(sonogramData);
-		}
-
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 31). // two randomly chosen prime numbers
@@ -151,6 +144,13 @@ public class Sonogram implements Comparable<Sonogram> {
 		return 0;
 	}
 
+	public void add(SonogramData sd) {
+		boolean firstSD = sonogramDataSet.isEmpty();
+		sonogramDataSet.add(sd);
+		if (firstSD)
+			startTime = sd.timeStamp;
+		}
+	
 	public void play() {
 		AudioDispatcher audioDispatcher = null;
 		AudioPlayer audioPlayer = null;
@@ -265,10 +265,12 @@ public class Sonogram implements Comparable<Sonogram> {
 			rs = stmt.executeQuery();
 			if (rs.next())
 				sonogramId = rs.getLong(1);
+			else
+				throw new SQLException();
 			Iterator<SonogramData> sdi = sonogramDataSet.iterator();
 			while (sdi.hasNext()) {
 				SonogramData sd = sdi.next();
-				sd.create(conn);
+				sd.create(this, conn);
 			}
 			conn.close();
 		} catch (SQLException ex) {
@@ -317,8 +319,10 @@ public class Sonogram implements Comparable<Sonogram> {
 		Iterator<SonogramData> sdi = sonogramDataSet.iterator();
 		while (sdi.hasNext()) {
 			SonogramData sd = sdi.next();
-			sd.sonogramId = sonogramId;
-			sd.create(conn);
+			if (sd.sonogramDataId == -1)
+				sd.create(this, conn);
+			else
+				sd.createIntersect(this, conn);
 		}
 	}
 	
@@ -468,5 +472,9 @@ public class Sonogram implements Comparable<Sonogram> {
 
 	public void setQuality(EnumSonogramQuality quality) {
 		this.quality = quality;
+	}
+
+	public double getStartTime() {
+		return startTime;
 	}
 }

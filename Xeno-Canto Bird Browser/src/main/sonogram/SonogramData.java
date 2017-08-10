@@ -19,9 +19,10 @@ import be.tarsos.dsp.util.fft.FFT;
 import main.ConnectionFactory;
 
 public class SonogramData implements Comparable<SonogramData> {
-	// Sonogram to which this datum belongs.  -1 if unassigned
-	public long sonogramId;
+	// Unique Id for this record
+	public long sonogramDataId;
 	
+	// Original timestamp for the buffer used to create this SonogramData
 	public final double timeStamp;
 	
 	// 0-3, i.e. 1, 2, 4 or 8 seconds
@@ -46,7 +47,11 @@ public class SonogramData implements Comparable<SonogramData> {
 	public float[] imag;
 
 	// Copy constructor
+	/*
+	Unneeded since last database revision
+
 	SonogramData(SonogramData sd) {
+		sonogramDataId = sd.sonogramDataId;
 		timeStamp = sd.timeStamp;
 		type = sd.type;
 		dataSize = sd.dataSize;
@@ -65,10 +70,11 @@ public class SonogramData implements Comparable<SonogramData> {
 			imag[i] = sd.imag[i];
 		}
 	}
-
+*/
+	
 	// Constructor used by retrieve() and Sonogram.add()
-	public SonogramData(long sid, int ds, int type, double ts) {
-		sonogramId = sid;
+	public SonogramData(long sdid, int ds, double ts) {
+		sonogramDataId = sdid;
 		dataSize = ds;
 		timeStamp = ts;
 		loIndex = hiIndex = 0;
@@ -79,9 +85,22 @@ public class SonogramData implements Comparable<SonogramData> {
 		imag = new float[dataSize];
 	}
 	
+	// Constructor used by SonogramProcessor.  Creates an anonymous SonogramData with zeroed data	
+	public SonogramData(double ts, int c) {
+		sonogramDataId = -1;
+		timeStamp = ts;
+		dataSize = c;
+		loIndex = hiIndex = 0;
+		index = new int[dataSize];
+		pwr = new float[dataSize];
+		phs = new float[dataSize];
+		real = new float[dataSize];
+		imag = new float[dataSize];
+	}
+	
 	// Constructor used by SonogramProcessor.  Creates an anonymous SonogramData
 	public SonogramData(double ts, float[] tBuffer, int c, int li, int hi, int t) {
-		sonogramId = -1;
+		sonogramDataId = -1;
 		timeStamp = ts;
 		dataSize = c;
 		loIndex = li;
@@ -99,9 +118,7 @@ public class SonogramData implements Comparable<SonogramData> {
 
 	@Override
 	public String toString() {
-		return "Sonogram Id: "
-				+ sonogramId
-				+ ", Type: "
+		return "Type: "
 				+ type
 				+ ", Data Size: "
 				+ dataSize
@@ -111,18 +128,10 @@ public class SonogramData implements Comparable<SonogramData> {
 				+ hiIndex;
 	}
 	
-	private void fillComplexValues(float[] tBuffer) {
-		for (int i = 0; i < index.length; i++) {
-			real[i] = tBuffer[index[i]];
-			imag[i] = tBuffer[index[i]+1];
-		}	
-	}
-	
 	@Override
 	public int hashCode() {
 		return new HashCodeBuilder(149, 311). // two randomly chosen prime numbers
 				// if deriving: appendSuper(super.hashCode()).
-				append(sonogramId).
 				append(timeStamp).
 				toHashCode();
 	}
@@ -136,7 +145,6 @@ public class SonogramData implements Comparable<SonogramData> {
 		SonogramData rhs = (SonogramData) obj;
 		return new EqualsBuilder().
 				// if deriving: appendSuper(super.equals(obj)).
-				append(sonogramId, rhs.sonogramId).
 				append(timeStamp, rhs.timeStamp).
 				isEquals();
 	}
@@ -145,22 +153,12 @@ public class SonogramData implements Comparable<SonogramData> {
 	public int compareTo(SonogramData o) {
 		if (equals(o))
 			return 0;
-		long comp = sonogramId - o.sonogramId;
-		if (comp != 0)
-			return comp<0?-1:1;
 		double comp2 = timeStamp - o.timeStamp;
 		if (comp2 != 0)
 			return comp2<0?-1:1;
 		return 0;
 	}
 
-	private float[] powerBuffer(float[] tBuffer) {
-		float[] pb = new float[tBuffer.length/2];
-		for (int i = 0; i < pb.length; i++)
-			pb[i] = (float) Math.sqrt(tBuffer[2*i]*tBuffer[2*i]+tBuffer[2*i+1]*tBuffer[2*i+1]);
-		return pb;
-	}
-	
 	void calculatePhase() {
 		phs = new float[dataSize];
 		for (int i = 0; i < dataSize; i++)
@@ -170,29 +168,6 @@ public class SonogramData implements Comparable<SonogramData> {
 				phs[i] = (float) Math.atan(imag[i]/real[i]);
 	}
 	
-	private class PrimeComponentsFromPower {
-		private int nc = 0;
-		
-		public PrimeComponentsFromPower(float[] pw) {
-			for (int i=loIndex; i<hiIndex; i++)
-				add(i, pw);
-		}
-		
-		private void add(int ci, float[] pw) {
-			for (int i=0; i<nc; i++)
-				if (pw[index[i]] < pw[ci]) {
-					index[i] ^= ci;
-					ci ^= index[i];
-					index[i] ^= ci;
-					float temp = pwr[i];
-					pwr[i] = pw[ci];
-					pw[ci] = temp;
-				}
-			if (nc < dataSize)
-				index[nc++] = ci;
-		}
-	}
-
 	private class PrimeComponentsFromTransform {
 		private int nc = 0;
 		
@@ -243,20 +218,20 @@ public class SonogramData implements Comparable<SonogramData> {
 		return audioBuffer;
 	}
 	
-	public void create() {
-		Connection conn = null;
+	public void create(Sonogram sonogram, Connection conn) {
 		PreparedStatement stmt = null;
-		String sql = "insert into sonogram_data values (?, ?, ?)";
+		String sql = "insert into sonogram_data (time_stamp, data) values (?, ?)";
+		String sql2 = "select last_insert_id()";
+		ResultSet rs = null;
 		
 		try {
-			conn = ConnectionFactory.getConnection();
 			stmt = conn.prepareStatement(sql);
-			stmt.setLong(1, sonogramId);
-			stmt.setDouble(2, timeStamp);
+			stmt.setDouble(1, timeStamp);
 			ByteArrayOutputStream bout = new ByteArrayOutputStream();
 		    DataOutputStream dout = new DataOutputStream(bout);
 	    	try {
 	    		for (int i = 0; i < dataSize; i++) {
+	    			dout.writeFloat((float) (sonogram.getSonogramPreference().baseFrequency[type]*(index[i]+1)));
 			    	dout.writeFloat(real[i]);
 					dout.writeFloat(imag[i]);
 	    		}
@@ -265,9 +240,16 @@ public class SonogramData implements Comparable<SonogramData> {
 				System.out.println("SonogramData.create()");
 				e.printStackTrace();
 			}
-	    	stmt.setBytes(3, bout.toByteArray());
+	    	stmt.setBytes(2, bout.toByteArray());
+	    	stmt.executeUpdate();
 			stmt.close();
-			conn.close();
+			stmt = conn.prepareStatement(sql2);
+			rs = stmt.executeQuery();
+			if (rs.first())
+				sonogramDataId = rs.getLong(1);
+			else
+				throw new SQLException();
+			createIntersect(sonogram, conn);
 		}  catch (SQLException ex) {
 			// handle any errors
 			System.out.println("SonogramData.create()");
@@ -276,30 +258,16 @@ public class SonogramData implements Comparable<SonogramData> {
 			System.out.println("VendorError: " + ex.getErrorCode());
 		}		
 	}
-	
-	public void create(Connection conn) {
+
+	public void createIntersect(Sonogram sonogram, Connection conn) {
 		PreparedStatement stmt = null;
-		String sql = "insert into sonogram_data values (?, ?, ?)";
-		
+		String sql = "insert into sonogram_data_intersect values (?, ?, ?)";
 		try {
 			stmt = conn.prepareStatement(sql);
-			stmt.setLong(1, sonogramId);
-			stmt.setDouble(2, timeStamp);
-			ByteArrayOutputStream bout = new ByteArrayOutputStream();
-		    DataOutputStream dout = new DataOutputStream(bout);
-	    	try {
-	    		for (int i = 0; i < dataSize; i++) {
-	    			
-			    	dout.writeFloat(real[i]);
-					dout.writeFloat(imag[i]);
-	    		}
-	    		dout.close();
-			} catch (IOException e) {
-				System.out.println("SonogramData.create()");
-				e.printStackTrace();
-			}
-	    	stmt.setBytes(3, bout.toByteArray());
-	    	stmt.executeUpdate();
+			stmt.setLong(1, sonogram.getSonogramId());
+			stmt.setLong(2, sonogramDataId);
+			stmt.setDouble(3, timeStamp - sonogram.getStartTime());
+			stmt.executeUpdate();
 			stmt.close();
 		}  catch (SQLException ex) {
 			// handle any errors
@@ -307,7 +275,7 @@ public class SonogramData implements Comparable<SonogramData> {
 			System.out.println("SQLException: " + ex.getMessage());
 			System.out.println("SQLState: " + ex.getSQLState());
 			System.out.println("VendorError: " + ex.getErrorCode());
-		}		
+		}
 	}
 	
 	public static Set<SonogramData> retrieve(long sonogramId) {
@@ -330,8 +298,12 @@ public class SonogramData implements Comparable<SonogramData> {
 	public static Set<SonogramData> retrieve(long sonogramId, Connection conn) {
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
-		String sql = "select t1.*, t3.components, t2.type from sonogram_data as t1, sonogram as t2, sono_param as t3 where t1.sonogram_id = ? "
-				+"and t1.sonogram_id = t2.sonogram_id and t3.sono_param_id = t2.sono_param_id";
+		String sql = "select t2.time_stamp, t1.sonogram_data_id, t1.data, t4.components "
+				+ "from sonogram_data as t1, sonogram_data_intersect as t2, sonogram as t3, sonogram_preference as t4 "
+				+ "where t3.sonogram_id = ? "
+				+ "and t2.sonogram_id = t3.sonogram_id "
+				+ "and t2.sonogram_data_id = t1.sonogram_data_id "
+				+ "and t4.sonogram_preference_id = t3.sonogram_preference_id";
 		Set<SonogramData> sonogramDataSet = new TreeSet<SonogramData>();
 		try {
 			conn = ConnectionFactory.getConnection();
@@ -339,10 +311,9 @@ public class SonogramData implements Comparable<SonogramData> {
 			stmt.setLong(1, sonogramId);
 			rs = stmt.executeQuery();
 			while (rs.next()) {
-				SonogramData sonogramData = new SonogramData(sonogramId,
+				SonogramData sonogramData = new SonogramData(rs.getLong(2),
 						rs.getInt(4),
-						rs.getInt(5),
-						rs.getDouble(2));
+						rs.getDouble(1));
 		        byte[] asBytes = rs.getBytes(3);
 		        ByteArrayInputStream bin = new ByteArrayInputStream(asBytes);
 		        DataInputStream din = new DataInputStream(bin);

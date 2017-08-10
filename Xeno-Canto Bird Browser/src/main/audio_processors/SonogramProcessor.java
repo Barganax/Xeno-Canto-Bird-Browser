@@ -263,10 +263,7 @@ public class SonogramProcessor implements AudioProcessor {
 		double tsInc = (double)multipleBufferSize[sonogram.getType()]/Browser.SAMPLE_RATE/2;
 		for (int i = 0; i < missingData; i++) {
 			ts += tsInc;
-			SonogramData sd = new SonogramData(sonogram.getSonogramId(),
-					sonogram.getSonogramPreference().getComponents(),
-					sonogram.getType(),
-					ts);
+			SonogramData sd = new SonogramData(ts, sonogram.getSonogramPreference().getComponents());
 			sonogram.add(sd);
 		}
 	}
