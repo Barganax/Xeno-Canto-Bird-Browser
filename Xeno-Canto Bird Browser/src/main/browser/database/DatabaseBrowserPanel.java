@@ -1,10 +1,13 @@
 package main.browser.database;
 
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -20,9 +23,12 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
 
 import main.browser.Recording;
 import main.browser.Species;
+import main.sonogram.Sonogram;
 
 public class DatabaseBrowserPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -222,17 +228,60 @@ public class DatabaseBrowserPanel extends JPanel {
 				}
 			}
 		}
+		
+		private class CustomCellRenderer extends DefaultTableCellRenderer {
+			/* (non-Javadoc)
+			 * @see javax.swing.table.DefaultTableCellRenderer#getTableCellRendererComponent(javax.swing.JTable, java.lang.Object, boolean, boolean, int, int)
+			*/
+			public Component getTableCellRendererComponent(JTable table, Object value,
+			    boolean isSelected, boolean hasFocus, int row, int column) {
 
-		private class RecordingPanel extends JPanel {
+				Component rendererComp = super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+			     row, column);
+			   //Set foreground color
+	//		   rendererComp.setForeground(Color.red);
+			   //Set background color
+			   if (row > -1) {
+				   HasSonogramsKey key = new HasSonogramsKey(recordingList.get(row).getId(),
+					   databaseCard.onsetPreference.getOpId(),
+					   databaseCard.sonogramPreference.getSpId());
+				   if (databaseCard.hasSonogramsSet.contains(key)) {
+					   Color bgc = new Color(215, 235, 225);
+					   rendererComp .setBackground(bgc);
+				   }
+				   else {
+					   Color bgc = new Color(215, 215, 215);
+					   rendererComp.setBackground(bgc);
+				   }
+			   }
+			   return rendererComp ;
+			  }
+		 }
+		
+		 private class RecordingPanel extends JPanel {
 			/**
 			 * 
 			 */
 			private static final long serialVersionUID = 1L;
+			
+			final CustomCellRenderer renderer;
+			private class RecordingTable extends JTable {
+				   public RecordingTable(RecordingTableModel recordingTableModel) { super(recordingTableModel); }
+
+				@Override
+				   public TableCellRenderer getCellRenderer(int row, int column) {
+				    // TODO Auto-generated method stub
+				    return renderer;
+				   }
+			}
 
 			RecordingPanel() {
 				super();
+				renderer = new CustomCellRenderer();        
+
 				setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-				recordingTable = new JTable(new RecordingTableModel());
+//				recordingTable = new JTable(new RecordingTableModel());
+				recordingTable = new RecordingTable(new RecordingTableModel());
 				recordingTable.getSelectionModel().addListSelectionListener(recordingTableListener);
 				for (int i = 0; i < recordingTable.getColumnCount(); i++)
 					recordingTable.getColumnModel().getColumn(i).setPreferredWidth(COLUMN_WIDTH[i]);

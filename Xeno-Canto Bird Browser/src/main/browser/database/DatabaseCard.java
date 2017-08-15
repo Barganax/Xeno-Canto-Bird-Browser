@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -17,6 +20,9 @@ import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.GainProcessor;
@@ -36,6 +42,7 @@ import main.browser.Recording;
 import main.browser.RecordingInfo;
 import main.onset.Onset;
 import main.onset.OnsetPreference;
+import main.sonogram.Sonogram;
 import main.sonogram.SonogramFrequencyScale;
 import main.sonogram.SonogramPanel;
 import main.sonogram.SonogramPreference;
@@ -59,6 +66,9 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 	
 	SonogramProcessor sonogramProcessor = null;
 
+	// Map showing which recordings have been analyzed for particular settings
+	public final SortedSet<HasSonogramsKey> hasSonogramsSet;
+	
 	public List<SonogramPreference> sonogramPreferenceList;
 	public OnsetPreference onsetPreference;
 	public SonogramPreference sonogramPreference = null;
@@ -92,6 +102,7 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 		sonogramPreferenceList = SonogramPreference.retrieve();
 		sonogramPreference = SonogramPreference.retrieve("DEFAULT");
 		sonogramPanel = new SonogramPanel(this);
+		hasSonogramsSet = Sonogram.hasSonograms();
 		browserSonogramPanel = new BrowserSonogramPanel(this);
 		databaseOpPanel = new DatabaseOpPanel(this);
 		sonogramPreferenceAndReviewPanel = new SonogramPreferenceAndReviewPanel(this);
@@ -236,22 +247,13 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 											frequencyScale);
 		audioDispatcher.addAudioProcessor(pitchProcessor);
 		*/
-		/*
-		 * FFT PROCESSOR
-		 */
-//		fftProcessor = new FFTProcessor(this,
-//				sonogramPreference.getBufferSize(),
-//				sonogramPreference.getOverlap(),
-//				sonogramPreference.getEnumWindowFunction(),
-//				databaseOpPanel.resynthCheckBox.isSelected());
-//		fftProcessor.setSonogramPanel(sonogramPanel);
-//		audioDispatcher.addAudioProcessor(fftProcessor);
 
 		/*
 		 * SONOGRAM PROCESSOR
 		 * (replaces fftProcessor
 		 */
 		audioDispatcher.addAudioProcessor(sonogramProcessor);
+
 		/*
 		 * AUDIO FILE WRITER
 		 

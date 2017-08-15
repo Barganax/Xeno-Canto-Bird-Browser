@@ -298,13 +298,14 @@ public class SonogramData implements Comparable<SonogramData> {
 	public static Set<SonogramData> retrieve(long sonogramId, Connection conn) {
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
-		String sql = "select t2.time_stamp, t1.sonogram_data_id, t1.data, t4.components "
+		String sql = "select t2.time_stamp, t1.sonogram_data_id, t1.data, t3.type, t4.components "
 				+ "from sonogram_data as t1, sonogram_data_intersect as t2, sonogram as t3, sonogram_preference as t4 "
 				+ "where t3.sonogram_id = ? "
 				+ "and t2.sonogram_id = t3.sonogram_id "
 				+ "and t2.sonogram_data_id = t1.sonogram_data_id "
 				+ "and t4.sonogram_preference_id = t3.sonogram_preference_id";
 		Set<SonogramData> sonogramDataSet = new TreeSet<SonogramData>();
+    	SonogramPreference sp = SonogramPreference.retrieve(sonogramId);
 		try {
 			conn = ConnectionFactory.getConnection();
 			stmt = conn.prepareStatement(sql);
@@ -312,13 +313,15 @@ public class SonogramData implements Comparable<SonogramData> {
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				SonogramData sonogramData = new SonogramData(rs.getLong(2),
-						rs.getInt(4),
+						rs.getInt(5),
 						rs.getDouble(1));
 		        byte[] asBytes = rs.getBytes(3);
 		        ByteArrayInputStream bin = new ByteArrayInputStream(asBytes);
 		        DataInputStream din = new DataInputStream(bin);
 		        for (int i = 0; i < sonogramData.dataSize; i++) {
 		            try {
+		            	float frequency = din.readFloat();
+		            	
 						sonogramData.real[i] = din.readFloat();
 						sonogramData.imag[i] = din.readFloat();
 					} catch (IOException e) {

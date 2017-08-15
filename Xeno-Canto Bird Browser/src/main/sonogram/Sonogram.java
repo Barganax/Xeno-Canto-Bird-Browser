@@ -9,9 +9,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -32,6 +34,7 @@ import be.tarsos.dsp.util.fft.FFT;
 import be.tarsos.dsp.writer.WaveHeader;
 import main.ConnectionFactory;
 import main.browser.Browser;
+import main.browser.database.HasSonogramsKey;
 import main.onset.Onset;
 
 public class Sonogram implements Comparable<Sonogram> {
@@ -196,6 +199,36 @@ public class Sonogram implements Comparable<Sonogram> {
 		return floatBuffer;
 	}
 
+	
+	public static SortedSet<HasSonogramsKey> hasSonograms() {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		String sql = "select distinct t1.recording_id, t2.cod_param_id, t3.sonogram_preference_id "
+				+ "from recording as t1, onset as t2, sonogram as t3 "
+				+ "where t1.recording_id = t2.recording_id "
+				+ "and t2.onset_id = t3.onset_id";
+		SortedSet<HasSonogramsKey> ret = new TreeSet<HasSonogramsKey>();
+		try {
+			conn = ConnectionFactory.getConnection();
+			stmt = conn.prepareStatement(sql);
+			rs = stmt.executeQuery();
+			while (rs.next()) {
+				HasSonogramsKey k = new HasSonogramsKey(rs.getString(1), rs.getLong(2), rs.getLong(3));
+				ret.add(k);
+			}
+			stmt.close();
+			conn.close();
+		} catch (SQLException e) {
+			System.out.println("Sonogram.hasSonograms()");
+			System.out.println("SQLException: " + e.getMessage());
+			System.out.println("SQLState: " + e.getSQLState());
+			System.out.println("VendorError: " + e.getErrorCode());
+			e.printStackTrace();
+		}
+		return ret;
+	}
+	
 	public static Sonogram retrieve(Onset o, SonogramPreference sp, long l) {
 		Connection conn = null;
 		PreparedStatement stmt = null;
