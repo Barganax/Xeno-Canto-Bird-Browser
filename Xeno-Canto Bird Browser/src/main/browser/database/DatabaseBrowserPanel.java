@@ -241,18 +241,22 @@ public class DatabaseBrowserPanel extends JPanel {
 			   //Set foreground color
 	//		   rendererComp.setForeground(Color.red);
 			   //Set background color
+				HasSonogramsKey key = new HasSonogramsKey(recordingList.get(row).getId(),
+						databaseCard.onsetPreference.getOpId(),
+						databaseCard.sonogramPreference.getSpId());
 			   if (row > -1) {
-				   HasSonogramsKey key = new HasSonogramsKey(recordingList.get(row).getId(),
-					   databaseCard.onsetPreference.getOpId(),
-					   databaseCard.sonogramPreference.getSpId());
-				   if (databaseCard.hasSonogramsSet.contains(key)) {
-					   Color bgc = new Color(215, 235, 225);
-					   rendererComp .setBackground(bgc);
-				   }
-				   else {
-					   Color bgc = new Color(215, 215, 215);
-					   rendererComp.setBackground(bgc);
-				   }
+				   Color bgc;
+				   if (row == table.getSelectedRow())
+					   if (databaseCard.hasSonogramsSet.contains(key))
+						   bgc = new Color(255, 200, 15);
+					   else
+						   bgc = new Color (255, 180, 255);
+				   else
+					   if (databaseCard.hasSonogramsSet.contains(key))
+						   bgc = new Color(215, 255, 215);
+					   else
+						   bgc = new Color(240, 240, 240);
+				   rendererComp.setBackground(bgc);
 			   }
 			   return rendererComp ;
 			  }

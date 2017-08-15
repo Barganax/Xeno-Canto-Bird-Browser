@@ -39,10 +39,15 @@ public class SonogramPreferenceAndReviewPanel extends JPanel {
 	}
 	
 	public void sonogramReviewDone() {
+		HasSonogramsKey key = new HasSonogramsKey(databaseCard.currentRecordingId,
+				databaseCard.onsetPreference.getOpId(),
+				databaseCard.sonogramPreference.getSpId());
 		if (createsSonograms()
-				&& (!Sonogram.find(databaseCard.currentRecordingId, databaseCard.onsetPreference.getOpId(), databaseCard.sonogramPreference.getSpId())
-				|| replaceSonogramsDialog()))
+				&& (!databaseCard.hasSonogramsSet.contains(key))
+				|| replaceSonogramsDialog()) {
 			createSonograms();
+			databaseCard.hasSonogramsSet.add(key);
+		}
         CardLayout cl = (CardLayout)(getLayout());
         cl.show(this, PREFERENCE_DISPLAY_CARD);
         databaseCard.enableDatabaseControls();
