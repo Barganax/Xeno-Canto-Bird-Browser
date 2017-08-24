@@ -42,8 +42,8 @@ public class SonogramPreferenceAndReviewPanel extends JPanel {
 		HasSonogramsKey key = new HasSonogramsKey(databaseCard.currentRecordingId,
 				databaseCard.onsetPreference.getOpId(),
 				databaseCard.sonogramPreference.getSpId());
-		if (createsSonograms()
-				&& (!databaseCard.hasSonogramsSet.contains(key))
+		if (createsSonograms())
+			if (!databaseCard.hasSonogramsSet.contains(key)
 				|| replaceSonogramsDialog()) {
 			createSonograms();
 			databaseCard.hasSonogramsSet.add(key);
