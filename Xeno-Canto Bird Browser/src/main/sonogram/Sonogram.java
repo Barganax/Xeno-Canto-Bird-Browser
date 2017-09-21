@@ -51,9 +51,7 @@ public class Sonogram implements Comparable<Sonogram> {
 	private long sonogramId;
 	
 	private SonogramPanel sonogramPanel = null;
-	private SortedSet<SonogramData> sonogramDataSet;
-//	private Deque<SonogramData> sonogramDataDeque;
-	// used when creating .wav file
+	public SortedSet<SonogramData> sonogramDataSet;
 	private TarsosDSPAudioFormat tarsosDSPAudioFormat;
 	private AudioFormat audioFormat;
 	private int audioLen=0;
@@ -296,7 +294,8 @@ public class Sonogram implements Comparable<Sonogram> {
 			rs = stmt.executeQuery();
 			if (rs.next())
 				sonogramId = rs.getLong(1);
-			createSonogramData(conn);
+			else
+				System.out.println("Sonogram.create(): Couldn't retrieve last_insert_id()");
 		} catch (SQLException ex) {
 			// handle any errors
 			ex.printStackTrace();
@@ -305,18 +304,6 @@ public class Sonogram implements Comparable<Sonogram> {
 			System.out.println("SQLException: " + ex.getMessage());
 			System.out.println("SQLState: " + ex.getSQLState());
 			System.out.println("VendorError: " + ex.getErrorCode());
-		}
-	}
-	
-	public void createSonogramData(Connection conn) {
-//		System.out.println("Creating "+sonogramDataSet.size()+" SonogramData");
-		Iterator<SonogramData> sdi = sonogramDataSet.iterator();
-		while (sdi.hasNext()) {
-			SonogramData sd = sdi.next();
-			if (sd.sonogramDataId == -1)
-				sd.create(this, conn);
-			else
-				sd.createIntersect(this, conn);
 		}
 	}
 	

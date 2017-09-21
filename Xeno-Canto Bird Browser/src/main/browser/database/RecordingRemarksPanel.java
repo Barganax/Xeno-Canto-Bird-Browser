@@ -11,7 +11,7 @@ public class RecordingRemarksPanel extends JPanel {
 	public RecordingRemarksPanel() {
 		remarksTextArea = new JTextArea();
 		remarksTextArea.setLineWrap(true);
-		remarksTextArea.setPreferredSize(new Dimension(DatabaseCard.PREFERENCE_REVIEW_WIDTH, DatabaseCard.PREFERENCE_REVIEW_HEIGHT));
+		remarksTextArea.setPreferredSize(new Dimension(DatabaseCard.RECORDING_REMARKS_WIDTH, DatabaseCard.RECORDING_REMARKS_HEIGHT));
 		add(remarksTextArea);
 	}
 }

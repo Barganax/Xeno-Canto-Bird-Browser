@@ -39,7 +39,6 @@ public class DatabaseBrowserPanel extends JPanel {
 
 	private final CardLayout layout;
 	private final SpeciesBrowser speciesBrowser;
-	private final RecordingsBrowser recordingsBrowser;
 	private final DatabaseBrowserActionListener databaseBrowserActionListener;
 	private JLabel speciesLabel;
 	
@@ -47,6 +46,7 @@ public class DatabaseBrowserPanel extends JPanel {
 	private Species currentSpecies = null;
 	private Recording currentRecording = null;
 
+	final RecordingsBrowser recordingsBrowser;
 	JTable recordingTable;
 
 	public DatabaseBrowserPanel(DatabaseCard dbc) {
@@ -181,7 +181,7 @@ public class DatabaseBrowserPanel extends JPanel {
 		}
 	}
 	
-	private class RecordingsBrowser extends JPanel {
+	class RecordingsBrowser extends JPanel {
 		private final int[] COLUMN_WIDTH = { 90, 100, 50, 40, 160, 100, 80, 160, 200, 60, 200};
 		/**
 		 * 
@@ -205,10 +205,19 @@ public class DatabaseBrowserPanel extends JPanel {
 			speciesButton.setActionCommand("species");
 			speciesButton.addActionListener(databaseBrowserActionListener);
 			speciesButton.setEnabled(true);
-			add(speciesButton);
-			
+			add(speciesButton);	
 		}
 
+		public void disable() { 
+			recordingTable.setEnabled(false);
+			speciesButton.setEnabled(false);
+		}
+		
+		public void enable() { 
+			recordingTable.setEnabled(true);
+			speciesButton.setEnabled(true);
+		}
+		
 		private class RecordingTableListener implements ListSelectionListener {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {

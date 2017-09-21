@@ -54,9 +54,15 @@ import javazoom.jl.player.Player;
 
 public class Browser extends JPanel implements ActionListener, ListSelectionListener {
 	private static final long serialVersionUID = 1L;
+
 	public static final String SOUNDCLIP_DIRECTORY = "/home/brennus/xcdb/clips/";
 	public static final String WAV_EXTENSION = ".wav";
+	public static final int MAX_DATABASE_CONNECTIONS = 10;
+
+	// Audio constants
+	public static final int SAMPLE_RATE = 44100;
 	
+
 	// Xeno-Canto Table column constants
 	private static final int XCID_COL = 0;
 	private static final int SPECIES_COL = 1;
@@ -70,9 +76,6 @@ public class Browser extends JPanel implements ActionListener, ListSelectionList
 	private static final int[] COL_WIDTH = { 90, 400, 60, 50, 90, 130, 330, 70, 70 };
 
 	private static enum EnumDataSource { XENO_CANTO, XENO_CANTO_AUTO, DATABASE }
-	
-	// Audio constants
-	public static final int SAMPLE_RATE = 44100;
 	
 	// Other
 	static final int LAST_XENO_CANTO_PAGE = 11633;

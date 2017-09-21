@@ -21,9 +21,6 @@ import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.GainProcessor;
 import be.tarsos.dsp.io.TarsosDSPAudioFormat;
@@ -55,14 +52,20 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 	private static final long serialVersionUID = 1L;
 	public static final int PREFERENCE_REVIEW_WIDTH = 260;
 	public static final int PREFERENCE_REVIEW_HEIGHT = 400;
+	public static final int RECORDING_REMARKS_WIDTH = 260;
+	public static final int RECORDING_REMARKS_HEIGHT = 300;
+	public static final int SONOGRAM_CREATION_PROGRESS_WIDTH = RECORDING_REMARKS_WIDTH;
+	public static final int SONOGRAM_CREATION_PROGRESS_HEIGHT = 300;
+	
 	private static final double MAX_AMPLITUDE_COEFFICIENT = 10;
 	public static final String RESYNTH_DIRECTORY = Browser.SOUNDCLIP_DIRECTORY+"resynth/";
 	public static final String RESYNTH_STRING = "-resynth-";
 	private static final int[] SONOGRAM_LENGTH = { 1000, 2000, 4000, 8000 };
 	private static final int SONOGRAM_HEIGHT_FUDGE = 20;
-		
-	private final DatabaseBrowserPanel databaseBrowserPanel;
+	
+	public final SonogramCreationProgressPanel sonogramCreationProgressPanel;
 	private final BrowserSonogramPanel browserSonogramPanel;
+	final DatabaseBrowserPanel databaseBrowserPanel;
 	
 	SonogramProcessor sonogramProcessor = null;
 
@@ -97,6 +100,7 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 		databaseContentListener = new DatabaseContentListener();
 		databaseBrowserPanel = new DatabaseBrowserPanel(this);
 		recordingRemarksPanel = new RecordingRemarksPanel();
+		sonogramCreationProgressPanel = new SonogramCreationProgressPanel(this);
 		onsetPreferenceList = OnsetPreference.retrieve();
 		onsetPreference = OnsetPreference.retrieve("DEFAULT");
 		sonogramPreferenceList = SonogramPreference.retrieve();
@@ -111,7 +115,12 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 		layout.setHorizontalGroup(layout.createParallelGroup()
 				.addComponent(databaseBrowserPanel)
 				.addGroup(layout.createSequentialGroup()
-						.addComponent(recordingRemarksPanel)
+						.addGroup(layout.createParallelGroup()
+								.addComponent(recordingRemarksPanel)
+								.addComponent(sonogramCreationProgressPanel,
+										SONOGRAM_CREATION_PROGRESS_WIDTH,
+										SONOGRAM_CREATION_PROGRESS_WIDTH,
+										SONOGRAM_CREATION_PROGRESS_WIDTH))
 						.addComponent(browserSonogramPanel, spWidth, spWidth, spWidth)
 						.addComponent(sonogramPreferenceAndReviewPanel,
 								PREFERENCE_REVIEW_WIDTH, PREFERENCE_REVIEW_WIDTH, PREFERENCE_REVIEW_WIDTH))
@@ -119,7 +128,12 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 		layout.setVerticalGroup(layout.createSequentialGroup()
 				.addComponent(databaseBrowserPanel)
 				.addGroup(layout.createParallelGroup()
-						.addComponent(recordingRemarksPanel)
+						.addGroup(layout.createSequentialGroup()
+								.addComponent(recordingRemarksPanel)
+								.addComponent(sonogramCreationProgressPanel,
+										SONOGRAM_CREATION_PROGRESS_HEIGHT,
+										SONOGRAM_CREATION_PROGRESS_HEIGHT,
+										SONOGRAM_CREATION_PROGRESS_HEIGHT))
 						.addComponent(browserSonogramPanel, spHeight, spHeight, spHeight)
 						.addComponent(sonogramPreferenceAndReviewPanel))
 				.addComponent(databaseOpPanel));
@@ -165,9 +179,15 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 	 * convert dB gain to amplitude multiplier
 	 */
 	private static double dBToMultiplier(double d) { return Math.pow(10, d/10); }
-	
+
+	/*
+	 * Construct sonograms for and play an audio file.
+	 * maxAmplitude is used to scale the sonograms.
+	 * I know amplitude is not the same as power but when I started this I thought I'd
+	 * only be dealing with the amplitude and not the power.
+	 */
 	private void analyzeFile(String recordingId, File audioFile, double maxAmplitude) {
-		this.onsetList = Onset.retrieve(recordingId, this.onsetPreference.getOpId());
+		onsetList = Onset.retrieve(recordingId, onsetPreference.getOpId());
 		existingOnsets = this.onsetList.size() > 0;
 		if (sonogramPanel != null) {
 			browserSonogramPanel.timeScale.reset();
@@ -184,12 +204,15 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 																sonogramPreference.getBufferSize(),
 																sonogramPreference.getOverlap());
 		} catch (FileNotFoundException e) {
-			
+			e.printStackTrace();
+			return;
 		}
 		catch (UnsupportedAudioFileException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return;
 		}
+		databaseBrowserPanel.recordingsBrowser.disable();
 		TarsosDSPAudioFormat tarsosDSPAudioFormat = audioDispatcher.getFormat();
 		TarsosDSPAudioFormat audioFormat = null;
 		System.out.println("Encoding: "+tarsosDSPAudioFormat.getEncoding()
@@ -316,6 +339,8 @@ public class DatabaseCard extends JPanel implements OnsetHandler {
 		databaseOpPanel.repaint();
 		if (databaseOpPanel.createSonogramCheckBox.isSelected())
 			sonogramPreferenceAndReviewPanel.reviewSonograms();
+		else
+			databaseBrowserPanel.recordingsBrowser.enable();
 	}
 	
 	private class DatabaseContentListener implements ActionListener {
