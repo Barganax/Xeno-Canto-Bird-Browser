@@ -278,45 +278,6 @@ public class Sonogram implements Comparable<Sonogram> {
 		}
 	}
 
-	public void create() {
-		Connection conn = null;
-		PreparedStatement stmt = null;
-		String sql = "insert into sonogram (sonogram_preference_id, onset_id, type, length, quality) values (?, ?, ?, ?)";
-		String sql2 = "select last_insert_id()";
-		ResultSet rs = null;
-		try {
-			conn = ConnectionFactory.getConnection();
-			stmt = conn.prepareStatement(sql);
-			stmt.setLong(1, sonogramPreference.getSpId());
-			stmt.setLong(2, onset.getOnsetId());
-			stmt.setInt(3, type);
-			stmt.setLong(4, len);
-			stmt.setString(5, quality.name().toLowerCase());
-			stmt.executeUpdate();
-			stmt.close();
-			stmt = conn.prepareStatement(sql2);
-			rs = stmt.executeQuery();
-			if (rs.next())
-				sonogramId = rs.getLong(1);
-			else
-				throw new SQLException();
-			Iterator<SonogramData> sdi = sonogramDataSet.iterator();
-			while (sdi.hasNext()) {
-				SonogramData sd = sdi.next();
-				sd.create(this, conn);
-			}
-			conn.close();
-		} catch (SQLException ex) {
-			// handle any errors
-			ex.printStackTrace();
-			System.out.println("Sonogram.create()");
-			System.out.println(this.toString());
-			System.out.println("SQLException: " + ex.getMessage());
-			System.out.println("SQLState: " + ex.getSQLState());
-			System.out.println("VendorError: " + ex.getErrorCode());
-		}
-	}
-	
 	public void create(Connection conn) {
 		PreparedStatement stmt = null;
 		String sql = "insert into sonogram (sonogram_preference_id, onset_id, type, length, quality) values (?, ?, ?, ?, ?)";
