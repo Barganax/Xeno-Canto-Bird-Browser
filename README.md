@@ -18,7 +18,7 @@ tag field lets you enter an identifier for your settings.
 
 Likewise, the sonogram preference editing screen lets you define the parameters for generating the sonograms.  Similar to the onset
 preference screen you can enter an identifier for your settings.  Since I switched
-to using multiple-sized buffers the buffer overlap has been fixed at 50%.  This seems like a workable value.  The buffer size
+to using concurrent multiple-sized buffers the buffer overlap has been fixed at 50%.  This seems like a workable value.  The buffer size
 is for type 0 sonograms.  Types 1, 2 and 3 have sizes 2, 4 and 8 times the size of the type 0.  The window functions haven't been
 tested yet.  The components field determines the number of frequency components from the fft to save.  Resynthesizing a recording
 from 20 components still yields an identifiable sound.
